@@ -23,6 +23,11 @@ async def lifespan(app: FastAPI):
     logger.info("Starting up %s (version: %s)...", settings.PROJECT_NAME, settings.VERSION)
     await connect_to_mongo()
     await create_database_indexes()
+    try:
+        from app.services.user_service import user_service
+        await user_service.seed_default_admin()
+    except Exception as exc:
+        logger.warning("Could not seed default admin: %s", exc)
     yield
     logger.info("Shutting down %s...", settings.PROJECT_NAME)
     await close_mongo_connection()

@@ -31,3 +31,5 @@ class TimeSlotRepository(BaseRepository):
 
 
 time_slot_repo = TimeSlotRepository()
+time_slot_repository = time_slot_repo
+

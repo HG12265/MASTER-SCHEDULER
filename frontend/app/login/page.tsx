@@ -14,6 +14,9 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { authService } from "@/services/authService";
+
 
 const loginSchema = z.object({
   email: z
@@ -47,24 +50,27 @@ export default function LoginPage() {
     },
   });
 
+  const { login } = useAuth();
+
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true);
     setAuthError(null);
 
-    // Initial architecture authentication simulation
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      // Store development token
-      if (typeof window !== "undefined") {
-        localStorage.setItem("auth_token", "sample_jwt_token_for_architecture_phase");
-        localStorage.setItem("user_email", data.email);
+      await login(data.email, data.password);
+      const currentUser = authService.getCurrentUser();
+      if (currentUser?.role === "FACULTY") {
+        router.push("/faculty-portal");
+      } else {
+        router.push("/dashboard");
       }
-      router.push("/dashboard");
-    } catch {
-      setAuthError("Failed to authenticate. Please check your credentials.");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Failed to authenticate. Please check your credentials.";
+      setAuthError(msg);
       setIsSubmitting(false);
     }
   };
+
 
   const fillDemoCredentials = () => {
     setValue("email", "admin@university.edu");

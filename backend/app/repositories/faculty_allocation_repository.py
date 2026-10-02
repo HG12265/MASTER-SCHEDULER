@@ -66,3 +66,5 @@ class FacultyAllocationRepository(BaseRepository):
 
 
 faculty_allocation_repo = FacultyAllocationRepository()
+faculty_allocation_repository = faculty_allocation_repo
+

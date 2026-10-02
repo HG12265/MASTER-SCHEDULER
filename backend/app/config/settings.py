@@ -19,10 +19,27 @@ class Settings(BaseSettings):
     MONGODB_URL: str = "mongodb://localhost:27017"
     DATABASE_NAME: str = "master_scheduler"
 
+    # Environment & Timezone
+    APP_ENV: str = "development"
+    APP_TIMEZONE: str = "UTC"
+
     # Security & Authentication Settings
     JWT_SECRET: str = "master_scheduler_default_jwt_secret_key_change_in_production"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
+
+    # Email Settings (Optional / Configurable)
+    EMAIL_ENABLED: bool = False
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "noreply@masterscheduler.edu"
+
+    # Uploads & Backups
+    MAX_UPLOAD_SIZE_MB: int = 25
+
+    # CORS Settings
 
     # CORS Settings
     CORS_ORIGINS: Union[List[str], str] = ["http://localhost:3000", "http://127.0.0.1:3000"]

@@ -91,3 +91,5 @@ class ClassRepository(BaseRepository):
 
 
 class_repo = ClassRepository()
+class_repository = class_repo
+

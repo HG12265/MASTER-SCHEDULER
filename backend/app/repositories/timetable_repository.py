@@ -108,4 +108,6 @@ class TimetableEntryRepository(BaseRepository):
 
 
 timetable_repo = TimetableRepository()
+timetable_repository = timetable_repo
+
 timetable_entry_repo = TimetableEntryRepository()

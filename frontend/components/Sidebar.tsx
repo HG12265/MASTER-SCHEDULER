@@ -25,95 +25,147 @@ import {
   Sliders,
   UserCheck2,
   BookMarked,
+  Activity,
+  UserCog,
+  FileText,
+  Database,
+  History,
+  AlertTriangle,
+  HeartPulse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface NavSection {
-  title: string;
-  items: {
-    name: string;
-    href: string;
-    icon: React.ElementType;
-    badge?: string;
-  }[];
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ElementType;
+  badge?: string;
+  roles?: string[];
+  permission?: string;
 }
 
-const navSections: NavSection[] = [
-  {
-    title: "Overview",
-    items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    ],
-  },
-  {
-    title: "Calendar & Timing",
-    items: [
-      { name: "Academic Years", href: "/academic-years", icon: Calendar },
-      { name: "Semester Types", href: "/semester-types", icon: Layers },
-      { name: "Working Days", href: "/working-days", icon: CalendarCheck },
-      { name: "Time Slots", href: "/time-slots", icon: Clock },
-    ],
-  },
-  {
-    title: "Academic Structure",
-    items: [
-      { name: "Programmes", href: "/programmes", icon: GraduationCap },
-      { name: "Semesters", href: "/semesters", icon: ListOrdered },
-      { name: "Classes", href: "/classes", icon: School },
-      { name: "Subjects", href: "/subjects", icon: BookOpen },
-    ],
-  },
-  {
-    title: "Faculty & Resources",
-    items: [
-      { name: "Faculty Members", href: "/faculty", icon: Users },
-      { name: "Subject Allocation", href: "/faculty-allocations", icon: UserCheck },
-      { name: "Rooms & Labs", href: "/resources", icon: Building2 },
-    ],
-  },
-  {
-    title: "Scheduler & Constraints",
-    items: [
-      { name: "Scheduler Overview", href: "/scheduler", icon: Cpu, badge: "Readiness" },
-      { name: "Faculty Availability", href: "/faculty-availability", icon: UserCheck },
-      { name: "Fixed Slots", href: "/fixed-slots", icon: Lock },
-      { name: "Scheduling Settings", href: "/scheduler/settings", icon: Sliders },
-      { name: "Class Constraints", href: "/scheduler/class-constraints", icon: School },
-      { name: "Faculty Constraints", href: "/scheduler/faculty-constraints", icon: UserCheck2 },
-      { name: "Subject Preferences", href: "/scheduler/subject-constraints", icon: BookMarked },
-    ],
-  },
-  {
-    title: "Timetables & Views",
-    items: [
-      { name: "Generated Timetables", href: "/timetables", icon: CalendarDays },
-      { name: "Timetable Grid View", href: "/timetable", icon: Calendar },
-    ],
-  },
-  {
-    title: "Reports & Analytics",
-    items: [
-      { name: "Faculty Workload", href: "/reports/faculty-workload", icon: Users },
-      { name: "Subject Coverage", href: "/reports/subject-coverage", icon: BookOpen },
-      { name: "Resource Utilization", href: "/reports/resource-utilization", icon: Building2 },
-    ],
-  },
-  {
-    title: "System",
-    items: [
-      { name: "Institution Header", href: "/settings/institution", icon: ShieldCheck },
-      { name: "Settings", href: "/settings", icon: Settings },
-    ],
-  },
-];
+interface NavSection {
+  title: string;
+  roles?: string[];
+  items: NavItem[];
+}
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
+  const { user, role, hasPermission } = useAuth();
+
+  const userRole = role || (user?.role as string) || "SUPER_ADMIN";
+
+  // Build sections dynamically based on user role
+  const getNavSections = (): NavSection[] => {
+    // FACULTY Portal view
+    if (userRole === "FACULTY") {
+      return [
+        {
+          title: "Faculty Portal",
+          items: [
+            { name: "My Dashboard", href: "/faculty-portal", icon: LayoutDashboard },
+            { name: "My Timetable", href: "/faculty-portal/timetable", icon: Calendar },
+            { name: "Leave Requests", href: "/faculty-portal/leave", icon: CalendarCheck },
+            { name: "Notifications", href: "/notifications", icon: Activity },
+          ],
+        },
+      ];
+    }
+
+    // Default ADMIN / HOD / SUPER_ADMIN view
+    const sections: NavSection[] = [
+      {
+        title: "Overview",
+        items: [
+          { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        ],
+      },
+      {
+        title: "Daily Operations",
+        items: [
+          { name: "Operations Hub", href: "/operations", icon: Activity, badge: "Live" },
+          { name: "Daily Schedule", href: "/operations/daily", icon: Clock },
+          { name: "Leave Management", href: "/operations/leave", icon: CalendarCheck },
+          { name: "Substitutions", href: "/operations/substitutions", icon: UserCheck2 },
+          { name: "Academic Calendar", href: "/academic-calendar", icon: Calendar },
+        ],
+      },
+      {
+        title: "Academic Structure",
+        items: [
+          { name: "Programmes", href: "/programmes", icon: GraduationCap },
+          { name: "Semesters", href: "/semesters", icon: ListOrdered },
+          { name: "Classes", href: "/classes", icon: School },
+          { name: "Subjects", href: "/subjects", icon: BookOpen },
+        ],
+      },
+      {
+        title: "Timing & Resources",
+        items: [
+          { name: "Academic Years", href: "/academic-years", icon: Calendar },
+          { name: "Semester Types", href: "/semester-types", icon: Layers },
+          { name: "Working Days", href: "/working-days", icon: CalendarCheck },
+          { name: "Time Slots", href: "/time-slots", icon: Clock },
+          { name: "Faculty Members", href: "/faculty", icon: Users },
+          { name: "Subject Allocation", href: "/faculty-allocations", icon: UserCheck },
+          { name: "Rooms & Labs", href: "/resources", icon: Building2 },
+        ],
+      },
+      {
+        title: "Scheduler & Constraints",
+        items: [
+          { name: "Scheduler Overview", href: "/scheduler", icon: Cpu, badge: "Readiness" },
+          { name: "Faculty Availability", href: "/faculty-availability", icon: UserCheck },
+          { name: "Fixed Slots", href: "/fixed-slots", icon: Lock },
+          { name: "Scheduling Settings", href: "/scheduler/settings", icon: Sliders },
+          { name: "Class Constraints", href: "/scheduler/class-constraints", icon: School },
+          { name: "Faculty Constraints", href: "/scheduler/faculty-constraints", icon: UserCheck2 },
+          { name: "Subject Preferences", href: "/scheduler/subject-constraints", icon: BookMarked },
+        ],
+      },
+      {
+        title: "Timetables & Views",
+        items: [
+          { name: "Generated Timetables", href: "/timetables", icon: CalendarDays },
+          { name: "Timetable Grid View", href: "/timetable", icon: Calendar },
+        ],
+      },
+      {
+        title: "Reports & Analytics",
+        items: [
+          { name: "Faculty Workload", href: "/reports/faculty-workload", icon: Users },
+          { name: "Subject Coverage", href: "/reports/subject-coverage", icon: BookOpen },
+          { name: "Resource Utilization", href: "/reports/resource-utilization", icon: Building2 },
+          { name: "Substitutions Report", href: "/reports/substitutions", icon: UserCheck2 },
+        ],
+      },
+    ];
+
+    // System Administration section for SUPER_ADMIN
+    if (userRole === "SUPER_ADMIN" || hasPermission("users.manage") || hasPermission("backup.manage")) {
+      sections.push({
+        title: "System Administration",
+        items: [
+          { name: "User Accounts", href: "/settings/users", icon: UserCog },
+          { name: "Institution Header", href: "/settings/institution", icon: ShieldCheck },
+          { name: "System Settings", href: "/settings/system", icon: Settings },
+          { name: "Backup & Restore", href: "/settings/backup", icon: Database },
+          { name: "Audit Logs", href: "/audit-logs", icon: History },
+        ],
+      });
+    }
+
+    return sections;
+  };
+
+  const navSections = getNavSections();
 
   return (
     <>
@@ -134,7 +186,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       >
         {/* Header / Brand */}
         <div className="flex items-center justify-between h-16 px-5 border-b border-slate-800 bg-slate-950/40">
-          <Link href="/dashboard" className="flex items-center space-x-3 group">
+          <Link
+            href={userRole === "FACULTY" ? "/faculty-portal" : "/dashboard"}
+            className="flex items-center space-x-3 group"
+          >
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-500/30 group-hover:bg-indigo-500 transition-colors">
               <CalendarDays className="w-5 h-5" />
             </div>
@@ -167,7 +222,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const isActive =
-                    item.href === "/scheduler" || item.href === "/dashboard"
+                    item.href === "/scheduler" ||
+                    item.href === "/dashboard" ||
+                    item.href === "/faculty-portal" ||
+                    item.href === "/operations"
                       ? pathname === item.href
                       : pathname === item.href ||
                         (pathname?.startsWith(item.href + "/") ?? false);
@@ -225,12 +283,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-slate-200 truncate">
-                Admin Console
+                {userRole.replace("_", " ")}
               </p>
               <div className="flex items-center space-x-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-[10px] text-slate-400 truncate">
-                  Engine Ready
+                  {user?.username || "Active"}
                 </span>
               </div>
             </div>

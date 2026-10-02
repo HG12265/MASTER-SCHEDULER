@@ -159,3 +159,51 @@ async def export_resource_utilization_excel(
         headers={"Content-Disposition": 'attachment; filename="Resource_Utilization_Report.xlsx"'},
     )
 
+
+# ============================================================
+# PHASE 8 OPERATIONAL REPORTS
+# ============================================================
+
+from app.schemas.reports import SubstitutionReport, FacultyOperationalWorkloadReport
+
+
+@router.get(
+    "/substitutions",
+    response_model=DataResponse[SubstitutionReport],
+    summary="Get Substitutions Report",
+)
+async def get_substitutions_report(
+    startDate: Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
+    endDate: Optional[str] = Query(None, description="End date YYYY-MM-DD"),
+    facultyId: Optional[str] = Query(None, description="Faculty ID"),
+    classId: Optional[str] = Query(None, description="Class ID"),
+    status: Optional[str] = Query(None, description="Status (ASSIGNED, CANCELLED)"),
+):
+    report = await report_service.get_substitutions_report(
+        start_date=startDate,
+        end_date=endDate,
+        faculty_id=facultyId,
+        class_id=classId,
+        status_filter=status,
+    )
+    return DataResponse(message="Substitutions report generated successfully", data=report)
+
+
+@router.get(
+    "/operational-workload",
+    response_model=DataResponse[FacultyOperationalWorkloadReport],
+    summary="Get Faculty Operational Workload Report",
+)
+async def get_operational_workload_report(
+    startDate: Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
+    endDate: Optional[str] = Query(None, description="End date YYYY-MM-DD"),
+    facultyId: Optional[str] = Query(None, description="Faculty ID"),
+):
+    report = await report_service.get_operational_workload_report(
+        start_date=startDate,
+        end_date=endDate,
+        faculty_id=facultyId,
+    )
+    return DataResponse(message="Faculty operational workload report generated successfully", data=report)
+
+

@@ -17,6 +17,8 @@ export * from "./timetable";
 export * from "./timetableEdit";
 export * from "./institutionSettings";
 export * from "./reports";
+export * from "./phase8";
+
 
 export interface NavItem {
   name: string;

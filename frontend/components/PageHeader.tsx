@@ -8,6 +8,7 @@ interface PageHeaderProps {
   description?: string;
   breadcrumbs?: BreadcrumbItem[];
   actions?: ReactNode;
+  action?: ReactNode;
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
@@ -15,7 +16,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   description,
   breadcrumbs,
   actions,
+  action,
 }) => {
+  const headerActions = actions || action;
   return (
     <div className="flex flex-col gap-4 pb-6 border-b border-slate-200 md:flex-row md:items-center md:justify-between">
       <div>
@@ -52,9 +55,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         )}
       </div>
 
-      {actions && (
+      {headerActions && (
         <div className="flex items-center flex-wrap gap-2.5 shrink-0">
-          {actions}
+          {headerActions}
         </div>
       )}
     </div>

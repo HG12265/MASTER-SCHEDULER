@@ -24,3 +24,17 @@ export * from "./reportService";
 export * from "./exportService";
 export * from "./dashboard.service";
 
+// Phase 8 Services
+export * from "./authService";
+export * from "./userService";
+export * from "./leaveService";
+export * from "./substitutionService";
+export * from "./academicCalendarService";
+export * from "./operationsService";
+export * from "./notificationService";
+export * from "./auditService";
+export * from "./systemSettingsService";
+export * from "./integrityService";
+export * from "./backupService";
+
+

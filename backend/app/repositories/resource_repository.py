@@ -56,3 +56,5 @@ class ResourceRepository(BaseRepository):
 
 
 resource_repo = ResourceRepository()
+resource_repository = resource_repo
+

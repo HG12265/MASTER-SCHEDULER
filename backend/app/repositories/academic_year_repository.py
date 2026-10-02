@@ -31,3 +31,5 @@ class AcademicYearRepository(BaseRepository):
 
 
 academic_year_repo = AcademicYearRepository()
+academic_year_repository = academic_year_repo
+

@@ -40,6 +40,26 @@ export const reportService = {
     );
     return res.data.data;
   },
+
+  async getSubstitutions(params?: {
+    startDate?: string;
+    endDate?: string;
+    facultyId?: string;
+    classId?: string;
+    status?: string;
+  }): Promise<any> {
+    const res = await apiClient.get<ApiResponse<any>>("/reports/substitutions", { params });
+    return res.data.data;
+  },
+
+  async getOperationalWorkload(params?: {
+    startDate?: string;
+    endDate?: string;
+    facultyId?: string;
+  }): Promise<any> {
+    const res = await apiClient.get<ApiResponse<any>>("/reports/operational-workload", { params });
+    return res.data.data;
+  },
 };
 
 export default reportService;

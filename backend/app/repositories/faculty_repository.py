@@ -51,3 +51,5 @@ class FacultyRepository(BaseRepository):
 
 
 faculty_repo = FacultyRepository()
+faculty_repository = faculty_repo
+

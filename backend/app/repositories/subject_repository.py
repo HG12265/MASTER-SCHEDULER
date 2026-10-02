@@ -69,3 +69,5 @@ class SubjectRepository(BaseRepository):
 
 
 subject_repo = SubjectRepository()
+subject_repository = subject_repo
+

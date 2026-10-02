@@ -99,3 +99,49 @@ class ResourceUtilizationReport(BaseModel):
     totalResources: int = 0
     averageUtilization: float = 0.0
     items: List[ResourceUtilizationItem] = Field(default_factory=list)
+
+
+class SubstitutionReportItem(BaseModel):
+    substitutionId: str
+    date: str
+    absentFacultyId: str
+    absentFacultyName: str
+    substituteFacultyId: Optional[str] = None
+    substituteFacultyName: Optional[str] = None
+    classId: str
+    className: str
+    subjectId: str
+    subjectName: str
+    subjectCode: str
+    timeSlotName: str
+    status: str
+    assignmentType: str
+
+
+class SubstitutionReport(BaseModel):
+    startDate: Optional[str] = None
+    endDate: Optional[str] = None
+    totalSubstitutions: int = 0
+    assignedCount: int = 0
+    cancelledCount: int = 0
+    items: List[SubstitutionReportItem] = Field(default_factory=list)
+
+
+class FacultyOperationalWorkloadItem(BaseModel):
+    facultyId: str
+    facultyName: str
+    facultyCode: str
+    department: Optional[str] = None
+    designation: Optional[str] = None
+    regularScheduledPeriods: int = 0
+    substitutePeriods: int = 0
+    totalOperationalPeriods: int = 0
+    approvedLeaveDays: int = 0
+
+
+class FacultyOperationalWorkloadReport(BaseModel):
+    startDate: Optional[str] = None
+    endDate: Optional[str] = None
+    totalFaculty: int = 0
+    items: List[FacultyOperationalWorkloadItem] = Field(default_factory=list)
+

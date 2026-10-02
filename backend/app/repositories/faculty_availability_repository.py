@@ -155,3 +155,5 @@ class FacultyAvailabilityRepository(BaseRepository):
 
 
 faculty_availability_repo = FacultyAvailabilityRepository()
+faculty_availability_repository = faculty_availability_repo
+

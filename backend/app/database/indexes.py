@@ -183,6 +183,40 @@ async def create_database_indexes() -> None:
             name="idx_history_revision",
         )
 
+        # users
+        await db.users.create_index([("username", ASCENDING)], unique=True, name="uq_users_username")
+        await db.users.create_index([("email", ASCENDING)], unique=True, name="uq_users_email")
+        await db.users.create_index([("facultyId", ASCENDING)], sparse=True, name="idx_users_faculty")
+
+        # faculty_leave_requests
+        await db.faculty_leave_requests.create_index([("facultyId", ASCENDING)], name="idx_leave_faculty")
+        await db.faculty_leave_requests.create_index([("status", ASCENDING)], name="idx_leave_status")
+        await db.faculty_leave_requests.create_index([("startDate", ASCENDING), ("endDate", ASCENDING)], name="idx_leave_dates")
+
+        # substitutions
+        await db.substitutions.create_index([("date", ASCENDING)], name="idx_substitutions_date")
+        await db.substitutions.create_index([("originalEntryId", ASCENDING)], name="idx_substitutions_entry")
+        await db.substitutions.create_index([("absentFacultyId", ASCENDING)], name="idx_substitutions_absent")
+        await db.substitutions.create_index([("substituteFacultyId", ASCENDING)], name="idx_substitutions_substitute")
+
+        # notifications
+        await db.notifications.create_index([("userId", ASCENDING), ("isRead", ASCENDING)], name="idx_notifications_user_read")
+        await db.notifications.create_index([("createdAt", DESCENDING)], name="idx_notifications_created")
+
+        # audit_logs
+        await db.audit_logs.create_index([("userId", ASCENDING)], name="idx_audit_user")
+        await db.audit_logs.create_index([("action", ASCENDING)], name="idx_audit_action")
+        await db.audit_logs.create_index([("entityType", ASCENDING)], name="idx_audit_entity")
+        await db.audit_logs.create_index([("createdAt", DESCENDING)], name="idx_audit_created")
+
+        # academic_calendar_exceptions
+        await db.academic_calendar_exceptions.create_index([("date", ASCENDING)], unique=True, name="uq_calendar_date")
+        await db.academic_calendar_exceptions.create_index([("academicYearId", ASCENDING)], name="idx_calendar_ay")
+
+        # backup_history
+        await db.backup_history.create_index([("createdAt", DESCENDING)], name="idx_backup_created")
+
         logger.info("Successfully ensured all MongoDB indexes.")
     except Exception as exc:
         logger.warning("Error creating MongoDB indexes: %s", exc)
+

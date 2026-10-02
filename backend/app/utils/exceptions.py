@@ -36,3 +36,18 @@ class DependencyException(AppException):
 
     def __init__(self, message: str = "Resource cannot be deleted due to dependent records"):
         super().__init__(message=message, status_code=status.HTTP_409_CONFLICT)
+
+
+class UnauthorizedException(AppException):
+    """Authentication failed or missing token (401)."""
+
+    def __init__(self, message: str = "Unauthorized"):
+        super().__init__(message=message, status_code=status.HTTP_401_UNAUTHORIZED)
+
+
+class ForbiddenException(AppException):
+    """Permission denied (403)."""
+
+    def __init__(self, message: str = "Forbidden"):
+        super().__init__(message=message, status_code=status.HTTP_403_FORBIDDEN)
+

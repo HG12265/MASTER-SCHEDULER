@@ -11,3 +11,5 @@ class WorkingDayRepository(BaseRepository):
 
 
 working_day_repo = WorkingDayRepository()
+working_day_repository = working_day_repo
+

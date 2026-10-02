@@ -433,5 +433,168 @@ class ReportService:
             items=items,
         )
 
+    async def get_substitutions_report(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        faculty_id: Optional[str] = None,
+        class_id: Optional[str] = None,
+        status_filter: Optional[str] = None,
+    ):
+        from app.schemas.reports import SubstitutionReport, SubstitutionReportItem
+        from app.repositories.base_repository import BaseRepository
+        sub_repo = BaseRepository("substitutions")
+        query: Dict[str, Any] = {}
+
+        if start_date or end_date:
+            date_query: Dict[str, Any] = {}
+            if start_date:
+                date_query["$gte"] = start_date
+            if end_date:
+                date_query["$lte"] = end_date
+            query["date"] = date_query
+
+        if faculty_id:
+            query["$or"] = [{"absentFacultyId": faculty_id}, {"substituteFacultyId": faculty_id}]
+        if class_id:
+            query["classId"] = class_id
+        if status_filter:
+            query["status"] = status_filter
+
+        docs = await sub_repo.find_many(query, sort=[("date", -1)])
+        items: List[SubstitutionReportItem] = []
+        assigned_cnt = 0
+        cancelled_cnt = 0
+
+        for d in docs:
+            st = d.get("status", "ASSIGNED")
+            if st == "ASSIGNED":
+                assigned_cnt += 1
+            elif st == "CANCELLED":
+                cancelled_cnt += 1
+
+            absent_fac = await faculty_repo.get_by_id(d.get("absentFacultyId", ""))
+            sub_fac = await faculty_repo.get_by_id(d.get("substituteFacultyId", "")) if d.get("substituteFacultyId") else None
+            cls = await class_repo.get_by_id(d.get("classId", ""))
+            sub = await subject_repo.get_by_id(d.get("subjectId", ""))
+            slot = await time_slot_repo.get_by_id(d.get("timeSlotId", ""))
+
+            items.append(
+                SubstitutionReportItem(
+                    substitutionId=str(d.get("id") or d.get("_id")),
+                    date=d.get("date", ""),
+                    absentFacultyId=d.get("absentFacultyId", ""),
+                    absentFacultyName=absent_fac.get("name") if absent_fac else "Faculty",
+                    substituteFacultyId=d.get("substituteFacultyId"),
+                    substituteFacultyName=sub_fac.get("name") if sub_fac else None,
+                    classId=d.get("classId", ""),
+                    className=cls.get("name") if cls else "Class",
+                    subjectId=d.get("subjectId", ""),
+                    subjectName=sub.get("name") if sub else "Subject",
+                    subjectCode=sub.get("subjectCode") if sub else "",
+                    timeSlotName=slot.get("name") if slot else "Period",
+                    status=st,
+                    assignmentType=d.get("assignmentType", "SUBSTITUTION"),
+                )
+            )
+
+        return SubstitutionReport(
+            startDate=start_date,
+            endDate=end_date,
+            totalSubstitutions=len(items),
+            assignedCount=assigned_cnt,
+            cancelledCount=cancelled_cnt,
+            items=items,
+        )
+
+    async def get_operational_workload_report(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        faculty_id: Optional[str] = None,
+    ):
+        from app.schemas.reports import FacultyOperationalWorkloadReport, FacultyOperationalWorkloadItem
+        from app.repositories.base_repository import BaseRepository
+        sub_repo = BaseRepository("substitutions")
+        leave_repo = BaseRepository("faculty_leave_requests")
+
+        fac_query: Dict[str, Any] = {"isActive": True}
+        if faculty_id:
+            fac_query["_id"] = faculty_id
+        all_fac = await faculty_repo.find_many(fac_query, sort=[("name", 1)])
+
+        # Find active published timetable to compute regular scheduled periods
+        published_tt = await timetable_repo.find_one({"status": "PUBLISHED"})
+        tt_id = published_tt.get("id") if published_tt else None
+
+        items: List[FacultyOperationalWorkloadItem] = []
+
+        for f in all_fac:
+            fid = str(f.get("id") or f.get("_id"))
+
+            # Regular scheduled periods in published weekly timetable
+            reg_scheduled = 0
+            if tt_id:
+                reg_entries = await timetable_entry_repo.find_many({
+                    "timetableId": tt_id,
+                    "facultyIds": fid,
+                    "isActive": True,
+                })
+                reg_scheduled = len(reg_entries)
+
+            # Substitutions served by this faculty in the date range
+            sub_query: Dict[str, Any] = {
+                "substituteFacultyId": fid,
+                "status": "ASSIGNED",
+                "assignmentType": "SUBSTITUTION",
+            }
+            if start_date or end_date:
+                dq: Dict[str, Any] = {}
+                if start_date:
+                    dq["$gte"] = start_date
+                if end_date:
+                    dq["$lte"] = end_date
+                sub_query["date"] = dq
+
+            subs = await sub_repo.find_many(sub_query)
+            sub_periods = len(subs)
+
+            # Approved leave count
+            leave_query: Dict[str, Any] = {
+                "facultyId": fid,
+                "status": "APPROVED",
+            }
+            if start_date or end_date:
+                if start_date:
+                    leave_query["startDate"] = {"$gte": start_date}
+                if end_date:
+                    leave_query["endDate"] = {"$lte": end_date}
+            leaves = await leave_repo.find_many(leave_query)
+            leave_days = len(leaves)
+
+            total_operational = reg_scheduled + sub_periods
+
+            items.append(
+                FacultyOperationalWorkloadItem(
+                    facultyId=fid,
+                    facultyName=f.get("name", "Faculty"),
+                    facultyCode=f.get("facultyCode", ""),
+                    department=f.get("department"),
+                    designation=f.get("designation"),
+                    regularScheduledPeriods=reg_scheduled,
+                    substitutePeriods=sub_periods,
+                    totalOperationalPeriods=total_operational,
+                    approvedLeaveDays=leave_days,
+                )
+            )
+
+        return FacultyOperationalWorkloadReport(
+            startDate=start_date,
+            endDate=end_date,
+            totalFaculty=len(items),
+            items=items,
+        )
+
 
 report_service = ReportService()
+
