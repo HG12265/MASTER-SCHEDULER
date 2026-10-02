@@ -16,11 +16,20 @@ import {
   Calendar,
   AlertCircle,
   RefreshCw,
+  ShieldCheck,
+  Clock,
+  Layers,
+  FileText,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { dashboardService, DashboardSummaryData } from "@/services/dashboard.service";
+import { TimetableStatusBadge, ValidationStatusBadge } from "@/components/timetable/TimetableStatusBadge";
+import { WorkloadChart } from "@/components/dashboard/WorkloadChart";
+import { ResourceUtilizationChart } from "@/components/dashboard/ResourceUtilizationChart";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummaryData | null>(null);
@@ -47,45 +56,47 @@ export default function DashboardPage() {
     fetchSummary();
   }, []);
 
+  const latestTt = summary?.latestTimetable;
+
   return (
     <AdminLayout>
       {/* Page Header */}
       <PageHeader
-        title="Department Overview"
-        description="Master academic scheduler overview, operational statistics, and timetable solver readiness."
+        title="Department Overview & Analytics"
+        description="Master academic scheduler overview, operational statistics, timetable approval status, and institutional analytics."
         breadcrumbs={[{ label: "Administration" }, { label: "Dashboard" }]}
         actions={
-          <>
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={fetchSummary}
               disabled={isLoading}
-              className="inline-flex items-center px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs disabled:opacity-50"
               title="Refresh summary data"
             >
               <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isLoading ? "animate-spin" : ""}`} />
               Refresh
             </button>
             <Link
-              href="/academic-setup"
-              className="inline-flex items-center px-3.5 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs transition-colors"
+              href="/timetables"
+              className="inline-flex items-center px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs"
             >
-              <Calendar className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-              Academic Setup
+              <Layers className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+              Timetables
             </Link>
             <Link
               href="/scheduler"
-              className="inline-flex items-center px-3.5 py-2 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs transition-colors"
+              className="inline-flex items-center px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-xs"
             >
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              Scheduler Engine
+              Generate Timetable
             </Link>
-          </>
+          </div>
         }
       />
 
-      {/* Backend Disconnection / Error Alert */}
+      {/* Backend Error Alert */}
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-start space-x-3 text-rose-800">
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-start space-x-3 text-rose-800 mb-6">
           <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
           <div className="flex-1 text-xs">
             <span className="font-semibold text-rose-900">Backend Communication Issue:</span> {error}
@@ -99,8 +110,47 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Key Metrics Grid (Live Database Counts) */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {/* Active Academic Period & Publication Status Banner */}
+      <div className="p-5 bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl shadow-sm text-white mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-indigo-300 text-xs font-semibold">
+            <Building className="w-4 h-4" />
+            <span>Active Academic Session</span>
+          </div>
+          <h2 className="text-xl font-bold mt-1 text-white flex items-center gap-3">
+            <span>{summary?.activeAcademicYear?.name || "Academic Year"}</span>
+            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              {summary?.currentSemesterType?.name || "Semester"} ({summary?.currentSemesterType?.code || "SEM"})
+            </span>
+          </h2>
+          <p className="text-xs text-slate-300 mt-1">
+            Tracking {summary?.totalTimetablesCount ?? 0} total timetable iterations across the department.
+          </p>
+        </div>
+
+        {/* Timetable Status Metric Pills */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-center min-w-[80px]">
+            <div className="text-xs text-emerald-400 font-bold">{summary?.publishedTimetablesCount ?? 0}</div>
+            <div className="text-[10px] text-slate-300 uppercase tracking-wider">Published</div>
+          </div>
+          <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-center min-w-[80px]">
+            <div className="text-xs text-blue-400 font-bold">{summary?.readyForApprovalCount ?? 0}</div>
+            <div className="text-[10px] text-slate-300 uppercase tracking-wider">In Review</div>
+          </div>
+          <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-center min-w-[80px]">
+            <div className="text-xs text-amber-400 font-bold">{summary?.draftTimetablesCount ?? 0}</div>
+            <div className="text-[10px] text-slate-300 uppercase tracking-wider">Drafts</div>
+          </div>
+          <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-center min-w-[80px]">
+            <div className="text-xs text-slate-400 font-bold">{summary?.archivedTimetablesCount ?? 0}</div>
+            <div className="text-[10px] text-slate-300 uppercase tracking-wider">Archived</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Key Master Data Metrics Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-6">
         <StatCard
           title="Programmes"
           value={isLoading ? "..." : (summary?.programmes ?? 0)}
@@ -157,123 +207,200 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Architecture Readiness & System Status */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* CP-SAT Engine Card */}
-        <div className="p-6 bg-white border border-slate-200/90 rounded-xl shadow-2xs flex flex-col justify-between">
+      {/* Attention Required & Latest Timetable Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+        {/* Latest Timetable Card */}
+        <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
-                Constraint Engine
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Latest Timetable Version
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                OR-Tools CP-SAT
-              </span>
+              {latestTt && <TimetableStatusBadge status={latestTt.status} size="sm" />}
             </div>
-            <h3 className="mt-3 text-lg font-bold text-slate-900">
-              Timetable Optimizer
-            </h3>
-            <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">
-              Mathematical solver architecture ready for exact scheduling: hard constraints guarantee zero faculty, room, and class overlaps.
-            </p>
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center text-xs text-slate-600">
-                <CheckCircle className="w-4 h-4 mr-2 text-emerald-500 shrink-0" />
-                <span>Zero Hardcoded Entities Architecture</span>
+
+            {latestTt ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                    Version #{latestTt.version}
+                  </h3>
+                  <ValidationStatusBadge status={latestTt.validationStatus} size="sm" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Academic Year</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{latestTt.academicYearName}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Semester</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{latestTt.semesterTypeName}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Generated</span>
+                    <span>{new Date(latestTt.generatedAt).toLocaleDateString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Total Entries</span>
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{latestTt.totalSlots} slots</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center text-xs text-slate-600">
-                <CheckCircle className="w-4 h-4 mr-2 text-emerald-500 shrink-0" />
-                <span>Async MongoDB Repository & Service Layer</span>
+            ) : (
+              <div className="py-6 text-center text-xs text-slate-400">
+                No generated timetable iterations found.
               </div>
-              <div className="flex items-center text-xs text-slate-600">
-                <CheckCircle className="w-4 h-4 mr-2 text-emerald-500 shrink-0" />
-                <span>Multi-period Lab & Theory Session Alignment</span>
-              </div>
-            </div>
+            )}
           </div>
 
-          <div className="pt-5 mt-6 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-medium">
-              Solver Phase: Next Step
+          <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span className="text-xs text-slate-500">
+              {latestTt?.status === "PUBLISHED" ? "Official Immutable Timetable" : "Awaiting Actions"}
             </span>
-            <Link
-              href="/scheduler"
-              className="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-700"
-            >
-              Configure Constraints <ArrowRight className="w-3.5 h-3.5 ml-1" />
-            </Link>
+            {latestTt && (
+              <Link
+                href={`/timetables/${latestTt.id}`}
+                className="inline-flex items-center text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700"
+              >
+                {latestTt.status === "DRAFT" ? "Continue Editing" : "View Timetable"} <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </Link>
+            )}
           </div>
         </div>
 
-        {/* Database Driven Design Banner */}
-        <div className="p-6 bg-linear-to-br from-slate-900 to-indigo-950 text-white rounded-xl shadow-xs flex flex-col justify-between">
+        {/* Attention Required Card */}
+        <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center space-x-2 text-indigo-300 text-xs font-semibold">
-              <Building className="w-4 h-4" />
-              <span>University Configuration</span>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Attention Required
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                {summary?.attentionItems?.length || 0} Alerts
+              </span>
             </div>
-            <h3 className="mt-3 text-lg font-bold text-white">
-              100% Dynamic Metadata
-            </h3>
-            <p className="mt-1.5 text-xs text-slate-300 leading-relaxed">
-              Administrators can introduce new programmes, semesters, elective groupings, and room laboratories at any time directly through the administration portal without modifying code.
-            </p>
-            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/10">
-              <div className="p-2.5 rounded-lg bg-white/5 border border-white/10">
-                <div className="text-[11px] text-slate-300">Phase 2 Status</div>
-                <div className="text-base font-bold text-white mt-0.5">CRUD Active</div>
-              </div>
-              <div className="p-2.5 rounded-lg bg-white/5 border border-white/10">
-                <div className="text-[11px] text-slate-300">Data Integrity</div>
-                <div className="text-base font-bold text-white mt-0.5">Enforced</div>
-              </div>
+
+            <div className="space-y-2.5">
+              {!summary?.attentionItems || summary.attentionItems.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400 flex flex-col items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-emerald-500 mb-2" />
+                  <p className="font-semibold text-slate-700 dark:text-slate-300">All Schedules Operational</p>
+                  <p className="text-[11px] text-slate-400">Zero pending approval bottlenecks or validation warnings detected.</p>
+                </div>
+              ) : (
+                summary.attentionItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`p-3 rounded-xl border flex items-start justify-between gap-3 text-xs ${
+                      item.severity === "error"
+                        ? "bg-rose-50 dark:bg-rose-950/30 border-rose-200 text-rose-800 dark:text-rose-300"
+                        : item.severity === "warning"
+                        ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 text-amber-800 dark:text-amber-300"
+                        : "bg-blue-50 dark:bg-blue-950/30 border-blue-200 text-blue-800 dark:text-blue-300"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      {item.severity === "error" ? (
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <div className="font-bold">{item.title}</div>
+                        <div className="text-[11px] opacity-90 mt-0.5">{item.message}</div>
+                      </div>
+                    </div>
+                    {item.actionUrl && (
+                      <Link
+                        href={item.actionUrl}
+                        className="text-[11px] font-semibold underline shrink-0 hover:opacity-80"
+                      >
+                        Review
+                      </Link>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
-          <div className="pt-4 mt-6 border-t border-white/10">
-            <Link
-              href="/academic-setup"
-              className="inline-flex items-center text-xs font-semibold text-indigo-300 hover:text-white transition-colors"
-            >
-              Modify Working Calendar <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <span>Automated institutional invariant verification</span>
+            <Link href="/timetables" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+              All Timetables
             </Link>
           </div>
         </div>
+      </div>
 
-        {/* Foundation Status & Guidelines */}
-        <div className="p-6 bg-white border border-slate-200/90 rounded-xl shadow-2xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Foundation Architecture
-              </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Phase 2 Complete
-              </span>
+      {/* SVG Analytics Charts (Faculty Workload + Resource Utilization) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <WorkloadChart data={summary?.facultyWorkloadChart || []} />
+        <ResourceUtilizationChart data={summary?.resourceUtilizationChart || []} />
+      </div>
+
+      {/* Quick Navigation to Phase 7 Academic Reports */}
+      <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs">
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
+          Academic Administration Reports & Exports
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link
+            href="/reports/faculty-workload"
+            className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-all group"
+          >
+            <div className="flex items-center justify-between text-indigo-600 dark:text-indigo-400 mb-2">
+              <Users className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-            <h3 className="mt-3 text-lg font-bold text-slate-900">
-              Clean Separation of Concerns
-            </h3>
-            <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">
-              FastAPI backend with decoupled repositories, services, schemas, and routers; Next.js 16 frontend with strict TypeScript types, live summary API consumption, and reusable component tokens.
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Faculty Workload</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Required vs scheduled teaching hours and workload utilization.
             </p>
-            <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200/80 rounded-lg flex items-start space-x-2.5">
-              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div className="text-xs text-emerald-800">
-                <span className="font-semibold">Phase 2 Verified:</span> 11 database collections with referential integrity, indexes, pagination, and search APIs are fully active.
-              </div>
-            </div>
-          </div>
+          </Link>
 
-          <div className="pt-5 mt-6 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-500">System Version 1.0.0</span>
-            <Link
-              href="/settings"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
-            >
-              System Settings
-            </Link>
-          </div>
+          <Link
+            href="/reports/subject-coverage"
+            className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-all group"
+          >
+            <div className="flex items-center justify-between text-purple-600 dark:text-purple-400 mb-2">
+              <BookOpen className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Subject Coverage</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Verify syllabus hours against timetabled periods per class.
+            </p>
+          </Link>
+
+          <Link
+            href="/reports/resource-utilization"
+            className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-all group"
+          >
+            <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-2">
+              <Building2 className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Resource Utilization</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Capacity tracking for classrooms, lecture halls, and laboratories.
+            </p>
+          </Link>
+
+          <Link
+            href="/settings/institution"
+            className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-all group"
+          >
+            <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-2">
+              <ShieldCheck className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Institution Branding</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Configure official institution headers, logos, and signatures for exports.
+            </p>
+          </Link>
         </div>
       </div>
     </AdminLayout>

@@ -1,4 +1,4 @@
-export type TimetableStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type TimetableStatus = "DRAFT" | "READY_FOR_APPROVAL" | "PUBLISHED" | "ARCHIVED";
 
 export type SolverStatus = "OPTIMAL" | "FEASIBLE" | "INFEASIBLE" | "UNKNOWN";
 
@@ -73,6 +73,10 @@ export interface Timetable {
   solverOptions?: Record<string, any>;
   stats?: TimetableSummaryStats;
   classIds?: string[];
+  publishedAt?: string | null;
+  publishedBy?: string | null;
+  publicationRevision?: number | null;
+  publicationVersion?: number | null;
   createdAt?: string;
   updatedAt?: string;
 }

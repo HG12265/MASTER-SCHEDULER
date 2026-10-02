@@ -34,6 +34,25 @@ class TimetableRepository(BaseRepository):
         )
         return res.modified_count
 
+    async def archive_previous_published(
+        self, academic_year_id: str, semester_type_id: str, exclude_id: Optional[str] = None
+    ) -> int:
+        db = get_database()
+        now = datetime.now(timezone.utc)
+        query: Dict[str, Any] = {
+            "academicYearId": academic_year_id,
+            "semesterTypeId": semester_type_id,
+            "status": "PUBLISHED",
+        }
+        if exclude_id:
+            from app.utils.object_id import parse_object_id
+            query["_id"] = {"$ne": parse_object_id(exclude_id)}
+        res = await db.timetables.update_many(
+            query,
+            {"$set": {"status": "ARCHIVED", "updatedAt": now}},
+        )
+        return res.modified_count
+
 
 class TimetableEntryRepository(BaseRepository):
     def __init__(self):

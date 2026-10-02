@@ -25,6 +25,9 @@ import {
   RefreshCw,
   ShieldCheck,
   AlertTriangle,
+  Send,
+  RotateCcw,
+  Archive,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -33,12 +36,18 @@ import { PageHeader } from "@/components/PageHeader";
 import { useToast } from "@/components/Toast";
 import { timetablesService } from "@/services/timetables";
 import { timetableEditService } from "@/services/timetableEditService";
+import { timetablePublicationService } from "@/services/timetablePublicationService";
 import {
   Timetable,
   TimetableMasterView,
   TimetableEntry,
 } from "@/types";
 import { TimetableValidationReport } from "@/types/timetableEdit";
+
+// Phase 7 Publication & Export Components
+import { TimetableStatusBadge, ValidationStatusBadge } from "@/components/timetable/TimetableStatusBadge";
+import { PublishConfirmDialog } from "@/components/timetable/PublishConfirmDialog";
+import { ExportMenu } from "@/components/timetable/ExportMenu";
 
 // Phase 6 Editing Components
 import { EditableTimetableGrid } from "@/components/timetable/EditableTimetableGrid";
@@ -192,6 +201,14 @@ export default function TimetableDetailPage() {
   const selectedClass = masterView.classes.find((c) => c.id === selectedClassId);
   const selectedFaculty = facultyList.find((f) => f.id === selectedFacultyId);
 
+  // Phase 7 Publication & Immutability States
+  const [publishDialogOpen, setPublishDialogOpen] = useState<boolean>(false);
+  const [isPublishing, setIsPublishing] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isReturning, setIsReturning] = useState<boolean>(false);
+  const [isArchiving, setIsArchiving] = useState<boolean>(false);
+  const [isCloning, setIsCloning] = useState<boolean>(false);
+
   // Edit Mode toggle
   function handleToggleEditMode() {
     if (!isEditMode) {
@@ -209,6 +226,74 @@ export default function TimetableDetailPage() {
       toast.showToast("Exited Edit Mode. Timetable is in View Mode.", "info");
     }
   }
+
+  // Publication Workflow Handlers
+  const handleSubmitForApproval = async () => {
+    try {
+      setIsSubmitting(true);
+      const res = await timetablePublicationService.submitForApproval(timetableId);
+      toast.showToast(res.message || "Submitted for approval successfully", "success");
+      loadData();
+    } catch (err: any) {
+      toast.showToast(err?.response?.data?.message || "Failed to submit for approval", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReturnToDraft = async () => {
+    try {
+      setIsReturning(true);
+      const res = await timetablePublicationService.returnToDraft(timetableId);
+      toast.showToast(res.message || "Returned to draft successfully", "success");
+      loadData();
+    } catch (err: any) {
+      toast.showToast(err?.response?.data?.message || "Failed to return to draft", "error");
+    } finally {
+      setIsReturning(false);
+    }
+  };
+
+  const handlePublishConfirm = async () => {
+    try {
+      setIsPublishing(true);
+      const res = await timetablePublicationService.publish(timetableId);
+      toast.showToast("Timetable officially published! Direct editing is now permanently disabled.", "success");
+      setPublishDialogOpen(false);
+      setIsEditMode(false);
+      loadData();
+    } catch (err: any) {
+      toast.showToast(err?.response?.data?.message || "Publish validation failed", "error");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handleCreateDraftCopy = async () => {
+    try {
+      setIsCloning(true);
+      const res = await timetablePublicationService.createDraftCopy(timetableId);
+      toast.showToast("Created new editable draft version!", "success");
+      router.push(`/timetables/${res.data.id}`);
+    } catch (err: any) {
+      toast.showToast(err?.response?.data?.message || "Failed to create draft copy", "error");
+    } finally {
+      setIsCloning(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    try {
+      setIsArchiving(true);
+      const res = await timetablePublicationService.archive(timetableId);
+      toast.showToast("Timetable moved to archive.", "success");
+      loadData();
+    } catch (err: any) {
+      toast.showToast(err?.response?.data?.message || "Failed to archive timetable", "error");
+    } finally {
+      setIsArchiving(false);
+    }
+  };
 
   // Lock / Unlock toggle
   async function handleToggleLock(entry: TimetableEntry) {
@@ -250,55 +335,119 @@ export default function TimetableDetailPage() {
           { label: `Version ${tt.version}` },
         ]}
         actions={
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Version & Revision */}
-            <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-slate-800 text-slate-200 border border-slate-700">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Revision Badge */}
+            <span className="text-xs font-mono font-bold px-2 py-1 rounded-lg bg-slate-800 text-slate-200 border border-slate-700">
               Rev #{currentRevision}
             </span>
 
-            {/* Timetable Status */}
-            <span
-              className={`text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider ${
-                tt.status === "PUBLISHED"
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-              }`}
-            >
-              {tt.status}
-            </span>
+            {/* Timetable Status Badge */}
+            <TimetableStatusBadge status={tt.status} />
 
-            {/* Validation Status */}
-            <span
-              className={`text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider ${
-                validationStatus === "VALID"
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-              }`}
-            >
-              {validationStatus}
-            </span>
+            {/* Validation Status Badge */}
+            <ValidationStatusBadge status={validationStatus} />
 
-            {/* Edit Mode Button */}
-            <button
-              onClick={handleToggleEditMode}
-              className={`px-3.5 py-1.5 text-xs font-semibold rounded-xl transition shadow flex items-center gap-1.5 ${
-                isEditMode
-                  ? "bg-rose-600 hover:bg-rose-500 text-white"
-                  : "bg-indigo-600 hover:bg-indigo-500 text-white"
-              }`}
-            >
-              {isEditMode ? (
-                <>
-                  <LogOut className="w-3.5 h-3.5" />
-                  Exit Edit Mode
-                </>
-              ) : (
-                <>
-                  <Edit3 className="w-3.5 h-3.5" />
-                  Edit Timetable
-                </>
-              )}
-            </button>
+            {/* Export & Print Menu */}
+            <ExportMenu
+              timetableId={timetableId}
+              activeView={activeTab === "master" ? "master" : activeTab === "faculty" ? "faculty" : "class"}
+              selectedClassId={selectedClassId}
+              selectedFacultyId={selectedFacultyId}
+              onPrint={() =>
+                router.push(
+                  `/timetables/${timetableId}/print?view=${
+                    activeTab === "master" ? "master" : activeTab === "faculty" ? "faculty" : "class"
+                  }&classId=${selectedClassId}&facultyId=${selectedFacultyId}`
+                )
+              }
+            />
+
+            {/* Status-specific Workflow Action Buttons */}
+            {tt.status === "DRAFT" && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSubmitForApproval}
+                  disabled={isSubmitting || validationStatus !== "VALID"}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition shadow flex items-center gap-1.5 disabled:opacity-50"
+                  title={validationStatus !== "VALID" ? "Must be VALID to submit for approval" : "Submit for Approval"}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {isSubmitting ? "Submitting..." : "Submit for Approval"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleToggleEditMode}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition shadow flex items-center gap-1.5 ${
+                    isEditMode
+                      ? "bg-rose-600 hover:bg-rose-500 text-white"
+                      : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                  }`}
+                >
+                  {isEditMode ? (
+                    <>
+                      <LogOut className="w-3.5 h-3.5" />
+                      Exit Edit Mode
+                    </>
+                  ) : (
+                    <>
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Edit Timetable
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+
+            {tt.status === "READY_FOR_APPROVAL" && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleReturnToDraft}
+                  disabled={isReturning}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition shadow flex items-center gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  {isReturning ? "Returning..." : "Return to Draft"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPublishDialogOpen(true)}
+                  disabled={validationStatus !== "VALID"}
+                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition shadow flex items-center gap-1.5 disabled:opacity-50"
+                  title={validationStatus !== "VALID" ? "Must be VALID to publish" : "Publish Official Timetable"}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Publish Timetable
+                </button>
+              </>
+            )}
+
+            {tt.status === "PUBLISHED" && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleCreateDraftCopy}
+                  disabled={isCloning}
+                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition shadow flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
+                  {isCloning ? "Creating Draft..." : "Create New Draft Version"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleArchive}
+                  disabled={isArchiving}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition shadow flex items-center gap-1.5"
+                >
+                  <Archive className="w-3.5 h-3.5" />
+                  {isArchiving ? "Archiving..." : "Archive"}
+                </button>
+              </>
+            )}
           </div>
         }
       />
@@ -352,6 +501,47 @@ export default function TimetableDetailPage() {
           onValidationComplete={() => loadData()}
         />
       </div>
+
+      {/* Official Published Immutability Banner */}
+      {tt.status === "PUBLISHED" && (
+        <div className="mb-6 p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in duration-150">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white flex items-center gap-2">
+                <span>Official Published Timetable</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                  Immutable v{tt.version}
+                </span>
+              </div>
+              <p className="text-xs text-emerald-200/80">
+                Published on {new Date(tt.publishedAt || tt.generatedAt).toLocaleString()} {tt.publishedBy ? `by ${tt.publishedBy}` : ""}. Direct manual editing is disabled to preserve institutional audit integrity. Future changes must be made through a new draft copy.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleCreateDraftCopy}
+            disabled={isCloning}
+            className="px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow flex items-center gap-1.5 shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
+            {isCloning ? "Cloning..." : "Create New Draft Version"}
+          </button>
+        </div>
+      )}
+
+      {/* Archived Banner */}
+      {tt.status === "ARCHIVED" && (
+        <div className="mb-6 p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center space-x-3 text-slate-400">
+          <Archive className="w-5 h-5 text-slate-500 shrink-0" />
+          <div className="text-xs">
+            <span className="font-bold text-slate-300">Archived Historical Timetable.</span> This record is stored for historical reporting and audit purposes and is strictly read-only.
+          </div>
+        </div>
+      )}
 
       {/* Tabs Switcher */}
       <div className="flex items-center gap-2 border-b border-slate-800 mb-6">
@@ -923,6 +1113,14 @@ export default function TimetableDetailPage() {
           toast.showToast("Partial regeneration applied successfully!", "success");
           loadData();
         }}
+      />
+      {/* PUBLISH CONFIRM DIALOG */}
+      <PublishConfirmDialog
+        isOpen={publishDialogOpen}
+        onClose={() => setPublishDialogOpen(false)}
+        onConfirm={handlePublishConfirm}
+        isLoading={isPublishing}
+        timetableVersion={tt.version}
       />
     </AdminLayout>
   );

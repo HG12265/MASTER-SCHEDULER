@@ -7,6 +7,7 @@ from app.schemas.common import BaseEntity
 
 class TimetableStatus(str, Enum):
     DRAFT = "DRAFT"
+    READY_FOR_APPROVAL = "READY_FOR_APPROVAL"
     PUBLISHED = "PUBLISHED"
     ARCHIVED = "ARCHIVED"
 
@@ -130,6 +131,10 @@ class TimetableResponse(BaseEntity):
     solverOptions: Dict[str, Any] = Field(default_factory=dict)
     stats: TimetableSummaryStats = Field(default_factory=TimetableSummaryStats)
     classIds: List[str] = Field(default_factory=list)
+    publishedAt: Optional[datetime] = None
+    publishedBy: Optional[str] = None
+    publicationRevision: Optional[int] = None
+    publicationVersion: Optional[int] = None
 
 
 class TimetableMasterViewResponse(BaseModel):

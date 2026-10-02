@@ -27,5 +27,7 @@ class AcademicYearRepository(BaseRepository):
     async def get_current(self) -> Optional[Dict[str, Any]]:
         return await self.find_one({"isCurrent": True, "isActive": True})
 
+    find_current = get_current
+
 
 academic_year_repo = AcademicYearRepository()

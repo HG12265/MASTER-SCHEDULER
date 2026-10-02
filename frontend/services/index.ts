@@ -18,3 +18,9 @@ export * from "./subjectConstraints";
 export * from "./schedulerValidation";
 export * from "./timetables";
 export * from "./timetableEditService";
+export * from "./institutionSettingsService";
+export * from "./timetablePublicationService";
+export * from "./reportService";
+export * from "./exportService";
+export * from "./dashboard.service";
+

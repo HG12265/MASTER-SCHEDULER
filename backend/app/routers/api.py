@@ -58,4 +58,12 @@ api_router.include_router(timetables_router)
 # Phase 6 Timetable Editing & Partial Regeneration
 api_router.include_router(timetable_edit_router)
 
+# Phase 7 Reports, Analytics & Official Institution Configuration
+from app.routers.institution_settings import router as institution_settings_router
+from app.routers.reports import router as reports_router
+
+api_router.include_router(institution_settings_router)
+api_router.include_router(reports_router)
+
+
 

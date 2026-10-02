@@ -96,8 +96,17 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    title: "Reports & Analytics",
+    items: [
+      { name: "Faculty Workload", href: "/reports/faculty-workload", icon: Users },
+      { name: "Subject Coverage", href: "/reports/subject-coverage", icon: BookOpen },
+      { name: "Resource Utilization", href: "/reports/resource-utilization", icon: Building2 },
+    ],
+  },
+  {
     title: "System",
     items: [
+      { name: "Institution Header", href: "/settings/institution", icon: ShieldCheck },
       { name: "Settings", href: "/settings", icon: Settings },
     ],
   },

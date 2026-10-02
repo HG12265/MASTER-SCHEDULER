@@ -15,6 +15,8 @@ export * from "./facultyAllocation";
 export * from "./scheduling";
 export * from "./timetable";
 export * from "./timetableEdit";
+export * from "./institutionSettings";
+export * from "./reports";
 
 export interface NavItem {
   name: string;

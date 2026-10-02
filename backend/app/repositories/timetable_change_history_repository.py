@@ -44,6 +44,31 @@ class TimetableChangeHistoryRepository(BaseRepository):
         await db.timetable_change_history.insert_one(doc)
         return doc_to_dict(doc)
 
+    async def create_change_record(
+        self,
+        timetable_id: str,
+        change_type: str,
+        description: str,
+        before_snapshot: Any = None,
+        after_snapshot: Any = None,
+        revision_before: int = 1,
+        revision_after: int = 1,
+        affected_entry_ids: Optional[List[str]] = None,
+        performed_by: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        before_list = before_snapshot if isinstance(before_snapshot, list) else [before_snapshot] if before_snapshot else []
+        after_list = after_snapshot if isinstance(after_snapshot, list) else [after_snapshot] if after_snapshot else []
+        return await self.log_change(
+            timetable_id=timetable_id,
+            revision=revision_after,
+            change_type=change_type,
+            description=description,
+            before_snapshot=before_list,
+            after_snapshot=after_list,
+            affected_entry_ids=affected_entry_ids or [],
+            performed_by=performed_by,
+        )
+
     async def get_history(self, timetable_id: str, limit: int = 100) -> List[Dict[str, Any]]:
         db = get_database()
         cursor = (

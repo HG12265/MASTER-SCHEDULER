@@ -252,8 +252,8 @@ class TimetableGenerationService:
         if not tt:
             raise NotFoundException(f"Timetable with ID '{timetable_id}' not found")
 
-        if tt.get("status") == TimetableStatus.PUBLISHED:
-            raise ConflictException("Published timetable cannot be deleted directly. Archive or unpublish first.")
+        if tt.get("status") in (TimetableStatus.PUBLISHED, TimetableStatus.ARCHIVED):
+            raise ConflictException("Published and archived timetables cannot be deleted directly. Historical integrity must be preserved.")
 
         await timetable_entry_repo.delete_by_timetable_id(timetable_id)
         await timetable_repo.delete_by_id(timetable_id)
